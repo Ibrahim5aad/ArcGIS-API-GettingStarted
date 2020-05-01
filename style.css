@@ -1,0 +1,11 @@
+#map {
+    height: 600px;
+    width: 50%;
+}
+
+#chart{
+    float: right;
+    width: 50%;
+    height: 400px;
+    background-color: antiquewhite;
+}
