@@ -3,24 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="style.css">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" type="text/css" href="style.css">
+    <link href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
     <link rel="stylesheet" href="https://js.arcgis.com/4.15/esri/css/main.css">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"/>
     <script src="https://js.arcgis.com/4.15/"></script>
     <script src="https://www.gstatic.com/charts/loader.js"></script>
-    <title>ArcGis API Getting Started</title>
+    <title> ArcGis API Getting Started </title>
 </head>
 <body>
-    <div id="map">
-        
+    <h1 class="header display-1">World Cities</h1>
+    <div class="selection">
+        <div>
+            <h5>
+                Country:  
+            </h5>
+          <select id="cntryselect" class="form-control" >
+              <option id="cntry" value="All Countries">All Countries</option>
+          </select>
+        </div>
+        <div>
+            <h5>
+                City:  
+            </h5>
+          <select id="cityselect" class="form-control" >
+              <option id="city"  value="All Cities">All Cities</option>
+          </select>
+        </div>
     </div>
-    <select id="cntryselect" >
-        <option id="cntry" value="All Countries">All Countries</option>
-    </select>
-    <select id="cityselect" >
-        <option id="city" value="All Cities">All Cities</option>
-    </select>
-    <div id="chart">
+    <div class="mycontainer">
+        
+        <div class="frame">
+            <div id="map">
+            
+            </div>
+        </div>
+        <div class="frame">
+            <div id="mychart">
 
+            </div>
+        </div>
+       
     </div>
     <script src="script.js" ></script>
 </body>

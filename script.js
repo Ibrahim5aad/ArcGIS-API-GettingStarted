@@ -1,28 +1,71 @@
+google.charts.load('current', {packages: ['corechart']});
+
 require(["esri/Map", "esri/views/MapView", "esri/widgets/BasemapGallery",
-         "esri/WebMap", "esri/layers/FeatureLayer", "esri/renderers/ClassBreaksRenderer", "esri/request"], 
-        function(Map, MapView, BasemapGallery, WebMap, FeatureLayer, Renderer, esriRequest) {
+         "esri/WebMap", "esri/layers/FeatureLayer", "esri/renderers/ClassBreaksRenderer", "esri/request", "esri/layers/GraphicsLayer",
+        "esri/Graphic", "esri/widgets/Legend"], 
+        function(Map, MapView, BasemapGallery, WebMap, FeatureLayer, Renderer, esriRequest, GraphicsLayer, Graphic, Legend) {
 
 
     var myRenderer = {
         type: "class-breaks",
-        field: "POP"
+        field: "POP",
+        legendOptions: {
+            title: "Population"
+          },
+        classBreakInfos: [
+            {
+              minValue: -1000000,  
+              maxValue: 1000000,  
+              symbol: {
+                type: "simple-marker", 
+                style: "circle",
+                color: "blue",
+                size: "8px",  
+                outline: {
+                  color: [ 255, 255, 0 ],
+                  width: 1  
+                }},  
+              label: "fewer than 1,000,000"
+            }, {
+              minValue: 1000001, 
+              maxValue: 2000000, 
+              symbol:  {
+                type: "simple-marker", 
+                style: "circle",
+                color: "red",
+                size: "8px",  
+                outline: {
+                  color: [ 0, 255, 255 ],
+                  width: 1  
+                }},    
+              label: "1,000,000 - 2,000,000"
+            }, {
+              minValue: 2000001,  
+              maxValue: 10000000,
+              symbol:  {
+                type: "simple-marker", 
+                style: "circle",
+                color: "yellow",
+                size: "8px",  
+                outline: {
+                  color: [ 255, 0, 255 ],
+                  width: 1
+                }}, 
+              label: "more than 2,000,000"
+            }
+          ],
+          defaultSympol:{
+            type: "simple-marker", 
+            style: "circle",
+            color: "yellow",
+            size: "8px",  
+            outline: {
+              color: [ 255, 0, 255 ],
+              width: 1
+            }}
     };
 
-    renderer.addClassBreakInfo({
-        minValue: 0,
-        maxValue: 4.0,
-        symbol: {
-          type: "point-3d",  // autocasts as new PointSymbol3D()
-          symbolLayers: [{
-            type: "object",  // autocasts as new ObjectSymbol3DLayer()
-            resource: { primitive: "cone" },
-            material: { color: [0, 169, 230] },
-            height: 200000,
-            width: 50000
-          }]
-        }
-      });
-
+    var myGraphicLayer = new GraphicsLayer();
       
     const myLayer = new FeatureLayer({
         // URL to the service
@@ -40,19 +83,35 @@ require(["esri/Map", "esri/views/MapView", "esri/widgets/BasemapGallery",
 
     var myMap = new Map({
         basemap : 'streets',
-        layers: [myLayer]
+        layers: [myLayer, myGraphicLayer]
     });
     
     var webmap = new WebMap({
-        portalItem: { // autocasts as new PortalItem()
+        portalItem: { 
           id: "13c2999a1f6c45998f7640fba71776ab"
         }
       });
 
     var view = new MapView({
         map: myMap,
-        container: 'map'
+        container: 'map',
+        zoom:2
     });
+
+    var legend = new Legend({
+        view: view,
+        layerInfos: [{
+          layer: myLayer,
+          title: ""
+        }],
+        style: {
+            type: "classic",
+            layout: "stack"
+          }
+      });
+      
+      
+    view.ui.add(legend, "bottom-right");
 
     view.on("layerview-create" , function(e){
         myLayer.queryExtent().then(function(results){
@@ -60,20 +119,21 @@ require(["esri/Map", "esri/views/MapView", "esri/widgets/BasemapGallery",
           });
     })
     
+
     view.on('click', function(e){
         view.goTo(
         {
             target: e.mapPoint,
-            zoom: 5
+            zoom: 4
         }, 
         {
              duration: 2000  
         });
     });
 
-    var basemapGallery = new BasemapGallery({
-        view: view
-      });
+    // var basemapGallery = new BasemapGallery({
+    //     view: view
+    //   });
 
     // view.ui.add(basemapGallery, {
     // position: "top-right"
@@ -92,10 +152,9 @@ require(["esri/Map", "esri/views/MapView", "esri/widgets/BasemapGallery",
             f: "json"
         }
     };
-    var currentCntry;
+
 
     esriRequest(reqURL, reqOpt).then(function(res){
-        console.log(res)
         var cntryArr =[];
         for (let i = 0; i < res.data.features.length; i++) {
             
@@ -131,27 +190,90 @@ require(["esri/Map", "esri/views/MapView", "esri/widgets/BasemapGallery",
               });
 
               esriRequest(reqURL, reqOpt).then(function(res){
-                console.log(reqOpt.query.where)
                 if(cityselect.firstChild){
                     cityselect.innerHTML = ''
                 }
-                
+                var opt1 = document.createElement("option");
+                opt1.value = 'All Cities';
+                opt1.textContent = 'All Cities';
+                cityselect.appendChild(opt1)
                 for (let i = 0; i < res.data.features.length; i++) {
                     var opt = document.createElement("option");
                     opt.value = res.data.features[i].attributes.CITY_NAME;
                     opt.textContent = res.data.features[i].attributes.CITY_NAME;
                     cityselect.appendChild(opt);
                 }
-        
+                
+                drawChart(res.data.features);
             });
             }
-        })
+        });
 
+        cityselect.addEventListener("change", function(){
+            if(this.value == 'All Cities'){
+                myLayer.definitionExpression = `CNTRY_NAME = '${cntryselect.value}'`;
+                myLayer.queryExtent().then(function(results){
+                    view.goTo(results.extent, 
+                        {
+                             duration: 2000  
+                        });
+                  });
+                  myGraphicLayer.removeAll();
+            }
+            else{
+                myLayer.definitionExpression = `CITY_NAME = '${this.value}'`;
+                myLayer.queryExtent().then(function(result){
+                var point = {
+                    type: 'point',
+                    longitude: result.extent.center.longitude,
+                    latitude: result.extent.center.latitude
+                }
+                var city = new Graphic({
+                    geometry: point,
+                    symbol: {
+                        type: 'simple-marker',
+                        style: 'circle',
+                        size: 15
+                    }
+                });
+                myGraphicLayer.removeAll();
+                myGraphicLayer.add(city);
+                var canvas = document.querySelector('#map > div > div > canvas');
+                debugger
+                var ctx = canvas.getContext("2d");
+                debugger
+
+                ctx.beginPath();
+                ctx.arc(95, 50, 40, 0, 2 * Math.PI);
+                ctx.stroke();
+                
+            });
+            }
+        });
+
+
+        function drawChart(mydata) {
+            console.log(mydata)
+            var data = new google.visualization.DataTable();
+            data.addColumn('string', 'City');
+            data.addColumn('number', 'Population');
+            mydata.forEach(feature => {
+                data.addRows([
+                    [feature.attributes.CITY_NAME, Math.abs(feature.attributes.POP)]
+                ]);
+                
+            });
+            var options = {
+            title: "Density of Precious Metals, in g/cm^3",
+            bar: {groupWidth: "95%"},
+            legend: { position: "none" },
+            };
+
+            // Instantiate and draw the chart.
+            var chart = new google.visualization.BarChart(document.getElementById('mychart'));
+            chart.draw(data, options);
+          }
         
     });
-
-
-
-    
     
  });
