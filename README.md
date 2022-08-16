@@ -1,2 +1,3 @@
-# ArcGIS-API-GettingStarted
-Getting started with ArcGIS API for JavaScript.
+# ArcGIS City Viewer
+
+A demo application showcasing how to get started with ArcGIS API for JavaScript.
